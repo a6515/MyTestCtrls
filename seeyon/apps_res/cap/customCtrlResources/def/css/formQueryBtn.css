@@ -1,0 +1,81 @@
+/* 按钮外层容器：调整一下对齐，去除多余的大边距 */
+.customButton_box_content {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 0 5px; /* 减小外层容器的内边距 */
+    height: 100%;   /* 确保它能适应单元格高度 */
+}
+
+/* 定义流光动画 */
+@keyframes glowing-stream {
+    0% { background-position: 0 0; }
+    50% { background-position: 400% 0; }
+    100% { background-position: 0 0; }
+}
+
+/* 按钮本体 */
+.my-fancy-btn {
+    /* --- 核心配色：炫彩渐变 (保持不变) --- */
+    background: linear-gradient(45deg, #03a9f4, #f441a5, #ffeb3b, #03a9f4);
+    background-size: 300% 300%;
+
+    /* --- 尺寸修正核心区域 --- */
+    color: #ffffff;
+    font-size: 12px;  /* 字体改小到 12px，适应表单 */
+    font-weight: bold;
+    font-family: "Microsoft YaHei", sans-serif;
+
+    /* 关键：强制不换行，防止文字变成两行撑大高度 */
+    white-space: nowrap;
+
+    /* 调整内边距，让按钮变薄 */
+    padding: 0 12px;
+
+    /* 强制设置高度和行高，确保和旁边的输入框对齐 */
+    height: 28px;
+    line-height: 28px;
+
+    border: none;
+    border-radius: 3px; /* 圆角稍微改小一点，更精致 */
+    cursor: pointer;
+
+    position: relative;
+    z-index: 1;
+    box-shadow: none;
+    transition: transform 0.2s;
+
+    min-width: 60px; /* 最小宽度减小 */
+    text-align: center;
+    display: inline-block;
+    user-select: none;
+    vertical-align: middle; /* 垂直居中对齐 */
+}
+
+/* --- 鼠标悬停状态 --- */
+.my-fancy-btn:hover {
+    /* 保持流光效果 */
+    animation: glowing-stream 8s linear infinite;
+    /* 微微放大即可，不要放太大 */
+    transform: scale(1.02);
+    /* 保持无阴影的锐利感 */
+    box-shadow: none;
+}
+
+/* --- 鼠标按下状态 --- */
+.my-fancy-btn:active {
+    transform: scale(0.95);
+    background: linear-gradient(45deg, #03a9f4, #f441a5);
+}
+
+/* --- 彻底隐藏之前的光晕层 --- */
+.my-fancy-btn::before {
+    display: none;
+}
+
+/* 选配：闪电图标 */
+.my-fancy-btn::after {
+    content: " \26A1";
+    font-size: 12px; /* 图标也随之改小 */
+    margin-left: 3px;
+}
