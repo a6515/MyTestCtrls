@@ -3,6 +3,8 @@ package com.seeyon.apps.myTestCtrl.dao;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+
+import java.util.Date;
 import java.util.Map;
 @Mapper
 public interface MyBatisTestDao {
@@ -22,4 +24,7 @@ public interface MyBatisTestDao {
      */
     @Select("SELECT form_recordid FROM ctp_affair WHERE id = #{affairId}")
     Long findFormRecordIdByAffairId(@Param("affairId") Long affairId);
+
+    @Select("SELECT now()")
+    Date showTime();
 }

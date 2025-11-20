@@ -3,6 +3,8 @@ import com.seeyon.apps.myTestCtrl.service.MyTestService;
 import com.seeyon.apps.myTestCtrl.dao.MyBatisTestDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service; // 核心注解
+
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -23,5 +25,10 @@ public class MyTestServiceImpl implements MyTestService {
     @Override
     public Long findFormRecordIdByAffairId(Long affairId) {
         return myBatisTestDao.findFormRecordIdByAffairId(affairId);
+    }
+
+    @Override
+    public Date showTime() {
+        return myBatisTestDao.showTime();
     }
 }

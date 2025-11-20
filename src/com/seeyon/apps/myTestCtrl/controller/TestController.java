@@ -28,6 +28,9 @@ public class TestController extends BaseController {
     public Map<String, Object> doSimpleTest(@RequestParam(value = "masterId", required = false) Long masterId,
                                             @RequestParam("tableName") String tableName,
                                             @RequestParam(value = "affairId", required = false) Long affairId) {
+        System.out.println("========================================");
+        System.out.println("【调试】数据库时间是: " + myTestService.showTime());
+        System.out.println("========================================");
 
         Map<String, Object> response = new HashMap<>();
         Long targetId = masterId; // 默认使用前端传来的 masterId (即 moduleId)
