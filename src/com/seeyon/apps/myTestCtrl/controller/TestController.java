@@ -1,6 +1,5 @@
 package com.seeyon.apps.myTestCtrl.controller;
-
-import com.seeyon.apps.myTestCtrl.dao.MyBatisTestDao;
+import com.seeyon.apps.myTestCtrl.service.MyTestService;
 import com.seeyon.ctp.common.controller.BaseController;
 import com.seeyon.ctp.common.log.CtpLogFactory;
 import org.apache.commons.logging.Log;
@@ -22,7 +21,7 @@ public class TestController extends BaseController {
     private static final Log LOGGER = CtpLogFactory.getLog(TestController.class);
 
     @Autowired
-    private MyBatisTestDao myBatisTestDao;
+    private MyTestService myTestService;
 
     @GetMapping(path = "/abc/simpleTest.do", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -44,7 +43,7 @@ public class TestController extends BaseController {
             if (affairId != null) {
                 System.out.println(">>> [模式识别] 检测到 affairId，判定为【流程表单】");
                 LOGGER.info(">>> [模式识别] 检测到 affairId，判定为【流程表单】");
-                Long realFormId = myBatisTestDao.findFormRecordIdByAffairId(affairId);
+                Long realFormId = myTestService.findFormRecordIdByAffairId(affairId);
 
                 if (realFormId != null) {
                     LOGGER.info(">>> [ID转换] affairId (" + affairId + ") -> form_recordid (" + realFormId + ")");
@@ -63,7 +62,7 @@ public class TestController extends BaseController {
             }
 
             // 执行查询
-            Map<String, Object> rowData = myBatisTestDao.selectDynamicTable(tableName, targetId);
+            Map<String, Object> rowData = myTestService.selectDynamicTable(tableName, targetId);
 
             if (rowData != null) {
                 // 处理时间格式

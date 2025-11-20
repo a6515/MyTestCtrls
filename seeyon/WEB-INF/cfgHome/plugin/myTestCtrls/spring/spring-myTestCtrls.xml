@@ -18,10 +18,5 @@
 		<property name="dataSource" ref="myTestDataSource" />
 		<property name="mapperLocations" value="classpath*:com/seeyon/apps/myTestCtrl/dao/*.xml"/>
 	</bean>
-<!--注意，有几个DAO就在这里注册几个-->
-	<bean id="myBatisTestDao" class="org.mybatis.spring.mapper.MapperFactoryBean">
-		<property name="mapperInterface" value="com.seeyon.apps.myTestCtrl.dao.MyBatisTestDao" />
-		<property name="sqlSessionFactory" ref="sqlSessionFactory" />
-	</bean>
 
 </beans>
