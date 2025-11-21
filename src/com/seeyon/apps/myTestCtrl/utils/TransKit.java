@@ -1,4 +1,4 @@
-package com.seeyon.apps.myTestCtrl.utils.kit;
+package com.seeyon.apps.myTestCtrl.utils;
 
 import com.seeyon.ctp.common.AppContext;
 import com.seeyon.ctp.common.ctpenumnew.manager.EnumManager;
