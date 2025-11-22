@@ -1,6 +1,6 @@
 /**
- * 前端自定义控件 - 按钮 (修正版)
- * 功能：获取表单数据并与后端通信 (支持缓存+数据库双模查询)
+ * 前端自定义控件 - 按钮 (CSDK 优化版)
+ * 功能：利用致远官方 CSDK 接口精准获取上下文数据
  */
 (function(factory) {
     var nameSpace = 'field_456654';
@@ -46,8 +46,8 @@
 
         appendChildDom: function() {
             var self = this;
+            // ... (保持原来的 DOM 结构不变)
             var domStructure = '<section class="customButton_box_content">' +
-                // 注意这里加了 "my-fancy-btn" 类名
                 '<div class="customButton_class_box my-fancy-btn ' + self.privateId + '" title="' + self.messageObj.display.escapeHTML() + '">' +
                 self.messageObj.display.escapeHTML() +
                 '</div>' +
@@ -61,78 +61,60 @@
                 self.buttonElement.removeEventListener('click', clickHandler);
                 self.buttonElement.addEventListener('click', clickHandler);
             }
-            // 权限控制
             if (self.messageObj.auth === 'hide') {
                 document.querySelector('#' + self.privateId).innerHTML = '***';
             }
         },
 
+        // =================================================================
+        // 核心逻辑优化部分
+        // =================================================================
         jumpFun: async function() {
             var self = this;
 
-            // ==========================================================
-            // 1. 获取 tableName (不变)
-            // ==========================================================
+            // 1. 获取表名 (依然从 adaptation 拿)
             var tableName = "";
             if (self.adaptation && self.adaptation.formMessage) {
                 tableName = self.adaptation.formMessage.tableName;
             }
+            if (!tableName) { alert("未获取到表名 tableName"); return; }
 
-            // ==========================================================
-            // 2. 获取 masterId (不变)
-            // ==========================================================
-            var masterId = "";
-            var matchModule = window.location.href.match(/moduleId=([^&]+)/);
-            if (matchModule) {
-                masterId = matchModule[1];
-            } else if (self.adaptation && self.adaptation.formMessage) {
-                masterId = self.adaptation.formMessage.contentDataId;
+            // 2. 使用 CSDK 获取核心元数据 (MasterId, AffairId)
+            // 这比正则匹配 URL 稳定得多
+            var metaData = {};
+            if (window.csdk && window.csdk.core && window.csdk.core.getMetaData) {
+                metaData = window.csdk.core.getMetaData() || {};
+            } else {
+                console.warn("未找到 csdk.core.getMetaData 接口，尝试降级获取");
             }
 
-            // ==========================================================
-            // 3. 【核心修复】获取 affairId (要去 window.top 找)
-            // ==========================================================
-            var affairId = "";
+            // 获取数据ID (优先用 contentDataId，这就是真正的 MasterId)
+            // 如果是无流程表单浏览，URL里的 moduleId 实际上就是 contentDataId
+            var masterId = metaData.contentDataId;
+            // 获取 AffairId (仅在流程表单中存在)
+            var affairId = metaData.affairId || "";
+            // FormId (表单定义ID): 对应 contentTemplateId  <--- 这里就是 formId
+            var formId = metaData.contentTemplateId || "";
 
-            // 定义一个包含所有可能地址的大字符串
-            var allUrls = window.location.href;
+            // 打印调试日志，方便确认
+            console.log(">>> [按钮点击] 数据获取结果：");
+            console.log("    Table Name: " + tableName);
+            console.log("    Master ID : " + masterId);
+            console.log("    Form ID    : " + formId); // 打印出来看看
+            console.log("    Affair ID : " + affairId + (affairId ? " (流程表单)" : " (无流程??/新建流程状态)"));
 
-            try {
-                // 尝试把浏览器最顶层(地址栏)的 URL 也拼进来找
-                // 加上 try-catch 是为了防止极少数情况下的跨域报错
-                if (window.top && window.top.location) {
-                    allUrls += "|||" + window.top.location.href;
-                    console.log("顶层窗口URL:", window.top.location.href);
-                    console.log("拼接起来的url为:", allUrls)
-                }
-            } catch (e) {
-                console.log("无法获取顶层窗口URL，忽略跨域限制");
-            }
+            if (!masterId) { alert("未找到表单数据ID (MasterId)"); return; }
 
-            console.log("正在以下范围查找 affairId:", allUrls);
-
-            // 在所有地址里正则匹配 affairId
-            // 这里的正则匹配逻辑不变，只是匹配源变成了 allUrls
-            var matchAffair = allUrls.match(/affairId=([^&]+)/);
-            if (matchAffair) {
-                affairId = matchAffair[1];
-            }
-
-            // ==========================================================
-            // 4. 发起请求 (不变)
-            // ==========================================================
-            if (!tableName) { alert("未找到表名 tableName"); return; }
-            if (!masterId) { alert("未找到 masterId"); return; }
-
+            // 3. 发起请求
             try {
                 var ctxPath = window.top._ctxPath || "/seeyon";
                 var requestUrl = ctxPath + "/abc/simpleTest.do?tableName=" + tableName + "&masterId=" + masterId;
 
                 if (affairId) {
                     requestUrl += "&affairId=" + affairId;
-                    console.log(">>> 捕获到流程表单，AffairId:", affairId);
-                } else {
-                    console.log(">>> 未捕获到 AffairId，按无流程表单处理");
+                }
+                if (formId) {
+                    requestUrl += "&formId=" + formId;
                 }
 
                 const response = await fetch(requestUrl, {
@@ -145,13 +127,11 @@
 
                 if (result.success) {
                     var showMsg = "【查询结果】\n";
-                    if(affairId) showMsg += "(来源：流程表单)\n";
-                    else showMsg += "(来源：无流程表)\n";
+                    showMsg += affairId ? "(来源：流程表单)\n" : "(来源：无流程表)\n";
                     showMsg += "-----------------\n";
 
-                    // 简单处理数据展示
                     var data = result.data;
-                    if (Array.isArray(data)) data = data[0]; // 如果是数组取第一个
+                    if (Array.isArray(data)) data = data[0];
 
                     for (var key in data) {
                         if (data.hasOwnProperty(key)) {

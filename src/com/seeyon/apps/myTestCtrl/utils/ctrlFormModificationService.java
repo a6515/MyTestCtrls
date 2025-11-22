@@ -10,10 +10,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
-public class FormModificationService {
+//注意，此工具类只适用于第三方工具类，如contrlller
+@Component("ctrlFormModificationService")
+public class ctrlFormModificationService {
 
-    private static final Log LOGGER = CtpLogFactory.getLog(FormModificationService.class);
+    private static final Log LOGGER = CtpLogFactory.getLog(ctrlFormModificationService.class);
 
     public void updateExternal(Long formId, Long recordId) throws Exception {
         CAP4FormManager cap4FormManager = (CAP4FormManager) AppContext.getBean("cap4FormManager");
@@ -53,7 +54,7 @@ public class FormModificationService {
             }
 
             // 3. 【存】
-            cap4FormManager.saveOrUpdateFormData(masterBean, formId, false); //
+            cap4FormManager.saveOrUpdateFormData(masterBean, formId, true); //
         }
     }
 }
