@@ -1,7 +1,10 @@
 package com.seeyon.apps.myTestCtrl.controller;
-import com.seeyon.apps.myTestCtrl.service.MyTestService;
+
+import com.seeyon.apps.myTestCtrl.utils.ctrlFormModificationService;
+import com.seeyon.ctp.common.affair.manager.AffairManager;
 import com.seeyon.ctp.common.controller.BaseController;
 import com.seeyon.ctp.common.log.CtpLogFactory;
+import com.seeyon.ctp.common.po.affair.CtpAffair;
 import org.apache.commons.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -9,8 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,67 +21,74 @@ public class TestController extends BaseController {
 
     private static final Log LOGGER = CtpLogFactory.getLog(TestController.class);
 
+    // 注入我们封装好的 CAP4 操作服务
     @Autowired
-    private MyTestService myTestService;
+    private ctrlFormModificationService formService;
+
+    // 注入致远标准的事项管理器 (用于 ID 转换)
+    @Autowired
+    private AffairManager affairManager;
 
     @GetMapping(path = "/abc/simpleTest.do", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public Map<String, Object> doSimpleTest(@RequestParam(value = "masterId", required = false) Long masterId,
-                                            @RequestParam("tableName") String tableName,
-                                            @RequestParam(value = "affairId", required = false) Long affairId) {
-        System.out.println("========================================");
-        System.out.println("【调试】数据库时间是: " + myTestService.showTime());
-        System.out.println("========================================");
+    public Map<String, Object> doSimpleTest(
+            @RequestParam(value = "masterId", required = false) Long masterId,
+            @RequestParam(value = "formId", required = false) Long formId, // 前端现在传这个参数了
+            @RequestParam(value = "affairId", required = false) Long affairId) {
 
         Map<String, Object> response = new HashMap<>();
-        Long targetId = masterId; // 默认使用前端传来的 masterId (即 moduleId)
+        Long targetRecordId = masterId; // 默认为 masterId
 
         try {
-            LOGGER.info(">>> 请求参数 | tableName: " + tableName + " | masterId: " + masterId + " | affairId: " + affairId);
+            System.out.println(">>> 致远三方接口操作表单方法开始");
+            System.out.println(">>> 请求参数 | formId: " + formId + " | masterId: " + masterId + " | affairId: " + affairId);
+
+            LOGGER.info(">>> 请求参数 | formId: " + formId + " | masterId: " + masterId + " | affairId: " + affairId);
+
+            if (formId == null) {
+                System.out.println("缺少必要参数 formId，无法加载表单定义");
+                throw new Exception("缺少必要参数 formId，无法加载表单定义");
+            }
 
             // ============================================================
-            // 【核心逻辑判断】
-            // 1. 如果 affairId 存在 -> 说明是流程表 -> 查 ctp_affair 获取 form_recordid
-            // 2. 如果 affairId 为空 -> 说明是无流程 -> 直接用 masterId (moduleId)
+            // 【核心逻辑优化】使用标准 API 进行 ID 转换
             // ============================================================
             if (affairId != null) {
-                System.out.println(">>> [模式识别] 检测到 affairId，判定为【流程表单】");
-                LOGGER.info(">>> [模式识别] 检测到 affairId，判定为【流程表单】");
-                Long realFormId = myTestService.findFormRecordIdByAffairId(affairId);
+                System.out.println(">>> [三方接口模式识别] 检测到 affairId，正在通过 AffairManager 获取真实数据ID...");
+                LOGGER.info(">>> [三方接口模式识别] 检测到 affairId，正在通过 AffairManager 获取真实数据ID...");
 
-                if (realFormId != null) {
-                    LOGGER.info(">>> [ID转换] affairId (" + affairId + ") -> form_recordid (" + realFormId + ")");
-                    targetId = realFormId;
+                // 使用 Manager 根据 ID 查出实体对象
+                CtpAffair affair = affairManager.get(affairId);
+
+                // 从实体对象中获取 formRecordId
+                if (affair != null) {
+                    // getFormRecordId() 是 CtpAffair 类的方法，不是 Manager 的
+                    targetRecordId = affair.getFormRecordid();
                 } else {
-                    // 防御性代码：万一查不到，还是用原来的试试，或者报错
-                    LOGGER.warn(">>> [警告] 根据 affairId 未查到 form_recordid！将尝试使用原始 masterId");
+                    System.out.println(">>> [警告] 未找到对应的 Affair 对象，将尝试使用原始 masterId");
+                    LOGGER.warn(">>> [警告] 未找到对应的 Affair 对象，将尝试使用原始 masterId");
                 }
             } else {
-                System.out.println(">>> [模式识别] affairId 为空，判定为【无流程表单】，直接使用 masterId");
-                LOGGER.info(">>> [模式识别] affairId 为空，判定为【无流程表单】，直接使用 masterId: " + targetId);
+                System.out.println(">>> [三方接口模式识别] 无流程表单，直接使用 masterId: " + targetRecordId);
+                LOGGER.info(">>> [三方接口模式识别] 无流程表单，直接使用 masterId: " + targetRecordId);
             }
 
-            if (targetId == null) {
-                throw new Exception("无法确定有效的数据 ID");
+            if (targetRecordId == null) {
+                System.out.println(">>> [警告] 无法确定有效的主表数据 ID (RecordId)");
+                throw new Exception("无法确定有效的主表数据 ID (RecordId)");
             }
 
-            // 执行查询
-            Map<String, Object> rowData = myTestService.selectDynamicTable(tableName, targetId);
+            // ============================================================
+            // 【数据查询】调用 CAP4FormManager 封装服务，不再查数据库
+            // ============================================================
+            Map<String, Object> rowData = formService.queryFormData(formId, targetRecordId);
 
-            if (rowData != null) {
-                // 处理时间格式
-                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                for (Map.Entry<String, Object> entry : rowData.entrySet()) {
-                    if (entry.getValue() instanceof LocalDateTime) {
-                        entry.setValue(((LocalDateTime) entry.getValue()).format(fmt));
-                    }
-                }
-
+            if (rowData != null && !rowData.isEmpty()) {
                 response.put("success", true);
                 response.put("data", rowData);
             } else {
                 response.put("success", false);
-                response.put("message", "ID: " + targetId + " 在表 " + tableName + " 中未找到数据");
+                response.put("message", "未找到表单数据 (formId=" + formId + ", recordId=" + targetRecordId + ")");
             }
 
         } catch (Exception e) {

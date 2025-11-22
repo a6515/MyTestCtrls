@@ -131,6 +131,7 @@
                     showMsg += "-----------------\n";
 
                     var data = result.data;
+                    console.log("致远三方接口查询结果：", data);
                     if (Array.isArray(data)) data = data[0];
 
                     for (var key in data) {
